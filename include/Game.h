@@ -9,10 +9,11 @@ class Game{
       Player player;
       std::vector<LevelConfig> levelConfigs;
       int currentLevelIdx;
+      Shop shop;
       bool running;
 
       void loadConfig(const std::string& configFile);
-      void loadLevels(const std::string& levelsFile)
+      void loadLevels(const std::string& levelsFile);
       void showMainMenu();
       void showInstructions() const; //check
       void showStats() const;
@@ -20,6 +21,7 @@ class Game{
       void playCurrentLevel();
 
       static void clearScreen();
+      static void printBanner();
 
    public:
       Game();
@@ -29,8 +31,6 @@ class Game{
       ~Game();
       
       void run();
-      void saveGame() const;
-      bool loadGame();
 
       friend std::ostream& operator<<(std::ostream& os, const Game& g);
       friend std::istream& operator>>(std::istream& is, Game& g);
