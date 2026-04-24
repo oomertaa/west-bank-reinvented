@@ -1,0 +1,1 @@
+Acest mini-joc este partea a doua a proiectul pentru POO. 
