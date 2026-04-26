@@ -13,8 +13,6 @@
 #include <windows.h>
 
 
-//TEMPORAR
-
 void Game::clearScreen() {
    system("cls");
 }
