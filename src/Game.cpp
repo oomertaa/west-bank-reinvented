@@ -14,13 +14,6 @@
 
 
 //TEMPORAR
-static constexpr int MAX_THIEVES = 5;
-static constexpr int MOVE_INTERVAL_MS = 1500;
-static constexpr int SPAWN_INTERVAL_MS = 2000;
-static constexpr int MAX_ESCAPED = 3;
-static constexpr int THIEF_BASE_HP = 5;
-static constexpr int THIEF_REWARD = 50;
-static constexpr int MAX_POSITION = 8;
 
 void Game::clearScreen() {
    system("cls");
@@ -40,13 +33,16 @@ void Game::printBanner() {
 }
 
 Game::Game() : player("Sheriff", 100, 500), currentLevelIdx(0), running(false), gameStarted(false) {
-   shop.addWeapon(new Pistol("Pistol Îmbunătățit", 20, 15, 200, 1.5));
+   loadConfig("data/config.txt");
+   loadLevels("data/levels.txt");
+   shop.loadFromFile("data/weapons.txt");
 }
 
 Game::Game(const std::string& configFile, const std::string& levelsFile)
    : player("Sheriff", 100, 500), currentLevelIdx(0), running(false), gameStarted(false){
       loadConfig(configFile);
       loadLevels(levelsFile);
+      shop.loadFromFile("data/weapons.txt");
    }
 
 Game::~Game() {}
@@ -85,18 +81,23 @@ void Game::loadConfig(const std::string& configFile) {
    player = Player(pName, pHp, pMoney);
 }
 
-/*to finish*/void Game::loadLevels(const std::string& levelsFile) {
+void Game::loadLevels(const std::string& levelsFile) {
    std::ifstream f(levelsFile);
-    if (!f.is_open())
-        throw std::runtime_error("Nu pot deschide: " + levelsFile);
+   if (!f.is_open())
+      throw std::runtime_error("Nu pot deschide: " + levelsFile);
    levelConfigs.clear();
    std::string token;
    while (f >> token) {
-      if(token[0] == '#') {
+      if (token[0] == '#') {
          f.ignore(1000, '\n');
          continue;
       }
-      //TODO reading after writing classes
+      LevelConfig cfg;
+      cfg.levelNumber = std::stoi(token);
+      f >> cfg.maxThieves >> cfg.moveIntervalMs >> cfg.spawnIntervalMs
+        >> cfg.maxEscaped >> cfg.thiefBaseHp >> cfg.thiefReward
+        >> cfg.maxPosition;
+      levelConfigs.push_back(cfg);
    }
 }
 
@@ -121,8 +122,6 @@ void Game::showInstructions() const {
             << "    Q  ->  Parasesti nivelul (pierde)\n\n"
             << "  TIPURI DE HOTI:\n"
             << "    [H]  Bandit \n"
-            << "    [B!] Boss\n\n"
-            << "    [0] Ostatic(nu il impusca)\n\n"
             << "  ARME:\n"
             << "    PISTOL  - precis, rata de foc buna\n"
             << "    SHOTGUN - loveste TOATE benzile deodata!\n"
@@ -177,9 +176,13 @@ void Game::showGameOver(bool won) {
    std::cin.get();
    running = false;
    gameStarted = false;
+   currentLevelIdx = 0;
 }
 
 void Game::playLevel(){
+   LevelConfig cfg = (currentLevelIdx < (int)levelConfigs.size())
+                     ? levelConfigs[currentLevelIdx] : LevelConfig{};
+
    std::unique_ptr<Thief> currentThief;
    int thievesSpawned = 0;
    int thievesDefeated = 0;
@@ -192,23 +195,21 @@ void Game::playLevel(){
    };
 
    auto spawnNext = [&]() {
-      if(thievesSpawned >= MAX_THIEVES) return;
+      if(thievesSpawned >= cfg.maxThieves) return;
       int lane = randomLane();
       ++thievesSpawned;
-      currentThief = std::make_unique<Thief>("Thief", THIEF_BASE_HP, lane, MAX_POSITION, THIEF_REWARD, 15, "Pistol");
+      currentThief = std::make_unique<Thief>("Thief", cfg.thiefBaseHp, lane, cfg.maxPosition, cfg.thiefReward, 15, "Pistol");
       const char* laneNames[] = {"STANGA", "MIJLOC", "DREAPTA"};
       lastMessage = "A aparut un hot in banda " + std::string(laneNames[lane]) + "!";
    };
 
    auto handleShot = [&](int targetLane) {
+      Weapon* w = player.getCurrentWeapon();
+      bool hitsAll = w && w->doesHitAllLanes();
       int dmg = player.shoot();
-      if (dmg == 0) {
-         return;
-      }
-      if (!currentThief) {
-         lastMessage = "Nicio tinta!"; return;
-      }
-      if (targetLane == currentThief->getLane()) {
+      if (dmg == 0) return;
+      if (!currentThief) { lastMessage = "Nicio tinta!"; return; }
+      if (hitsAll || targetLane == currentThief->getLane()) {
          currentThief->takeDamage(dmg);
          if (!currentThief->isAlive()) {
             lastMessage = "Hot eliminat! Ai castigat " + std::to_string(currentThief->getReward()) + " bani!";
@@ -217,7 +218,7 @@ void Game::playLevel(){
             currentThief.reset();
             ++thievesDefeated;
          } else {
-            lastMessage = "Lovit! HP hot:" + std::to_string(currentThief->getHp());
+            lastMessage = "Lovit! HP hot: " + std::to_string(currentThief->getHp());
          }
       } else {
          lastMessage = "Ai ratat! Hotul e in alta banda!";
@@ -262,7 +263,7 @@ void Game::playLevel(){
          }
       }
 
-      if (row == MAX_POSITION) {
+      if (row == cfg.maxPosition) {
          for (int i = 0; i < 3; i++) {
             std::string p = "   [J]    ";
             int pad = (W - (int)p.size()) / 2;
@@ -285,7 +286,7 @@ void Game::playLevel(){
         std::cout << "|" << center("STANGA") << "|" << center("MIJLOC") << "|" << center("DREAPTA") << "|\n";
         std::cout << sep << "\n";
 
-        for (int row = 0; row <= MAX_POSITION; ++row)
+        for (int row = 0; row <= cfg.maxPosition; ++row)
             std::cout << buildLaneRow(row) << "\n";
 
         std::cout << sep << "\n";
@@ -299,19 +300,20 @@ void Game::playLevel(){
 
         std::cout << "  [A/Stg] Stanga  [S/Sus] Mijloc  [D/Dr] Dreapta  [R] Reincarc  [Q] Iesi\n";
         std::cout << hdr << "\n";
-        std::cout << "  Hoti: " << thievesSpawned << "/" << MAX_THIEVES
+        std::cout << "  Nivel: " << cfg.levelNumber
+                  << " | Hoti: " << thievesSpawned << "/" << cfg.maxThieves
                   << " | Eliminati: " << thievesDefeated
-                  << " | Scapati: " << thievesEscaped << "/" << MAX_ESCAPED
+                  << " | Scapati: " << thievesEscaped << "/" << cfg.maxEscaped
                   << "                    \n";
         std::cout << "  " << std::left << std::setw(56) << lastMessage << "\n";
         std::cout << hdr << "\n";
     };
 
     auto isComplete = [&]() {
-        return thievesDefeated+thievesEscaped >= MAX_THIEVES;
+        return thievesDefeated + thievesEscaped >= cfg.maxThieves;
     };
     auto isFailed = [&]() {
-        return thievesEscaped >= MAX_ESCAPED;
+        return thievesEscaped >= cfg.maxEscaped;
     };
 
     // joc
@@ -350,13 +352,13 @@ void Game::playLevel(){
 
       auto now = std::chrono::steady_clock::now();
 
-      if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastMoveTime).count() >= MOVE_INTERVAL_MS) {
+      if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastMoveTime).count() >= cfg.moveIntervalMs) {
          updateThief();
          lastMoveTime = now;
       }
 
-      if(!currentThief && thievesSpawned < MAX_THIEVES) {
-         if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSpawnTime).count() >= SPAWN_INTERVAL_MS) {
+      if(!currentThief && thievesSpawned < cfg.maxThieves) {
+         if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSpawnTime).count() >= cfg.spawnIntervalMs) {
             spawnNext();
             lastSpawnTime = now;
          }
@@ -376,11 +378,25 @@ void Game::playLevel(){
    }
 
 
-   std::cout << "Nivel completat! Ai eliminat " << thievesDefeated << "\n" << "Scor: " << player.getScore() << "\n"
-             << "Apasa Enter pentru a continua...\n";
-   std::cin.ignore();
-   std::cin.get();
-   gameStarted = false;
+   currentLevelIdx++;
+   if (currentLevelIdx >= (int)levelConfigs.size()) {
+      clearScreen();
+      for (int i = 0; i < 20; i++) std::cout << "*";
+      std::cout << "\n  Ai terminat jocul! Felicitari, Sheriff!\n  Scor final: " << player.getScore() << " puncte\n";
+      for (int i = 0; i < 20; i++) std::cout << "*";
+      std::cout << "\n  Apasa Enter...\n";
+      std::cin.ignore();
+      std::cin.get();
+      running = false;
+      gameStarted = false;
+      currentLevelIdx = 0;
+   } else {
+      std::cout << "Nivel " << cfg.levelNumber << " completat! Ai eliminat " << thievesDefeated << " hoti.\n"
+                << "Scor: " << player.getScore() << "\n"
+                << "Apasa Enter pentru a merge la magazin sau continua...\n";
+      std::cin.ignore();
+      std::cin.get();
+   }
 }
 
 void Game::demonstratePolymorphism() {
@@ -487,10 +503,7 @@ void Game::showMainMenu() {
         try {
             switch (choice) {
             case 1:
-                if (!gameStarted) {
-                    player = Player("Sheriff", 100, 500);
-                    gameStarted = true;
-                }
+                gameStarted = true;
                 playLevel();
                 break;
             case 2:

@@ -14,7 +14,6 @@ struct LevelConfig {
    int thiefBaseHp = 5;
    int thiefReward = 50;
    int maxPosition = 8;
-   bool hasBoss = false;
 };
 
 class Level {
@@ -23,7 +22,6 @@ private:
    std::unique_ptr<Entity> currentThief;
    int thievesSpawned;
    int thievesEscaped;
-   bool bossSpawned;
    std::string lastMessage;
 
    std::chrono::steady_clock::time_point lastMoveTime;

@@ -1,5 +1,7 @@
 #include "Shop.h"
 #include "Pistol.h"
+#include "Shotgun.h"
+#include "Rifle.h"
 #include <iostream>
 #include <fstream>
 #include <stdexcept>
@@ -46,22 +48,19 @@ void Shop::loadFromFile(const std::string& filename) {
          f.ignore(1000, '\n');
          continue;
       }
-      std::string name;
       int damage, maxAmmo, price;
       double fireRate;
+      std::string name;
 
-      f >> name >> damage >> maxAmmo >> price >> fireRate;
+      f >> damage >> maxAmmo >> price >> fireRate;
+      std::getline(f, name);
+      if (!name.empty() && name[0] == ' ') name = name.substr(1);
 
       Weapon* w = nullptr;
-      if(type == "Pistol") {
-         w = new Pistol(name, damage, maxAmmo, price, fireRate);
-      }
-      else if(type == "Shotgun") {
-         //w = new Shotgun(name, damage, maxAmmo, price, fireRate);
-      }
-      else if(type == "Rifle") {
-         //w = new Rifle(name, damage, maxAmmo, price, fireRate);
-      }
+      if(type == "Pistol")        w = new Pistol(name, damage, maxAmmo, price, fireRate);
+      else if(type == "Shotgun")  w = new Shotgun(name, damage, maxAmmo, price, fireRate);
+      else if(type == "Rifle")    w = new Rifle(name, damage, maxAmmo, price, fireRate);
+
       if(w) catalog.push_back(w);
    }
 }

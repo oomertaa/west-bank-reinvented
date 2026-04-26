@@ -1,0 +1,6 @@
+# Format: levelNumber maxThieves moveIntervalMs spawnIntervalMs maxEscaped thiefBaseHp thiefReward maxPosition
+1 5 1500 2500 3 5 50 8
+2 7 1300 2200 3 7 65 9
+3 9 1100 2000 2 9 80 10
+4 11 900 1800 2 12 100 11
+5 15 700 1500 2 15 150 12

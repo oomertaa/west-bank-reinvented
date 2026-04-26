@@ -9,6 +9,8 @@ Shotgun::Shotgun(const std::string& name, int damage, int maxAmmo, int price, do
 
 Shotgun::Shotgun(const Shotgun& other) : Weapon(other) {}
 
+Shotgun::~Shotgun() {}
+
 Shotgun& Shotgun::operator=(const Shotgun& other) {
     if (this != &other)
         Weapon::operator=(other);

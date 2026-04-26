@@ -9,6 +9,8 @@ Rifle::Rifle(const std::string& name, int damage, int maxAmmo, int price, double
 
 Rifle::Rifle(const Rifle& other) : Weapon(other) {}
 
+Rifle::~Rifle() {}
+
 Rifle& Rifle::operator=(const Rifle& other) {
     if (this != &other)
         Weapon::operator=(other);
