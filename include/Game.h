@@ -1,6 +1,6 @@
+#pragma once
 #include "Player.h"
 #include "Level.h"
-#include "Shop.h"
 #include <vector>
 #include <string>
 
@@ -9,23 +9,24 @@ class Game{
       Player player;
       std::vector<LevelConfig> levelConfigs;
       int currentLevelIdx;
-      Shop shop;
       bool running;
+      bool gameStarted;
 
       void loadConfig(const std::string& configFile);
       void loadLevels(const std::string& levelsFile);
       void showMainMenu();
-      void showInstructions() const; //check
+      void showInstructions() const;
       void showStats() const;
       void showGameOver(bool won);
-      void playCurrentLevel();
+      void playLevel();
+      void demonstratePolymorphism();
 
       static void clearScreen();
       static void printBanner();
 
    public:
       Game();
-      Game(const std::string& configFile, const std::string& levelsFile, const std::string& weaponsFile);
+      Game(const std::string& configFile, const std::string& levelsFile);
       Game(const Game& other);
       Game& operator=(const Game& other);
       ~Game();

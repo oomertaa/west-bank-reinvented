@@ -4,7 +4,7 @@
 
 int main(){
    try {
-      Game game("data/config.txt", "data/levels.txt", "data/weapons.txt");
+      Game game;
       game.run();
    } catch (const std::exception& e) {
       std::cerr << "Eroare: " << e.what() << "\n";

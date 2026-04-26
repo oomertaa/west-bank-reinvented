@@ -1,0 +1,4 @@
+# Configuratie jucator
+player_name Sheriff
+player_hp 100
+player_start_money 500

@@ -1,3 +1,4 @@
+#pragma once
 #include <string>
 #include <iostream>
 
@@ -28,6 +29,17 @@ public:
    virtual bool isAlive() const = 0;
    virtual std::string getSymbol() const = 0;
 
+   virtual int getLane() const;
+   virtual int getPosition() const;
+   virtual int getMaxPosition() const;
+   virtual int getReward() const;
+   virtual bool isDefeated() const;
+   virtual bool hasEscaped() const;
+   virtual int getAttackDamage() const;
+   virtual void advance();
+   virtual void markDefeated();
+   virtual void markEscaped();
+
    friend std::ostream& operator<<(std::ostream& os, const Entity& e);
    friend std::istream& operator>>(std::istream& is, Entity& e);
-}
+};
