@@ -45,11 +45,12 @@ Game::Game(const std::string& configFile, const std::string& levelsFile)
 
 Game::~Game() {}
 
-Game::Game(const Game& other) : player(other.player), levelConfigs(other.levelConfigs), currentLevelIdx(other.currentLevelIdx), running(other.running), gameStarted(other.gameStarted) {}
+Game::Game(const Game& other) : player(other.player), shop(other.shop), levelConfigs(other.levelConfigs), currentLevelIdx(other.currentLevelIdx), running(other.running), gameStarted(other.gameStarted) {}
 
 Game& Game::operator=(const Game& other) {
    if(this != &other) {
       player = other.player;
+      shop = other.shop;
       levelConfigs = other.levelConfigs;
       currentLevelIdx = other.currentLevelIdx;
       running = other.running;
@@ -109,8 +110,8 @@ void Game::showInstructions() const {
       std::cout << "=";
    }
    std::cout << "\n"
-            << "  Hotii apar intr-o singura banda si avanseaza spre tine. Nu impusca ostaticii!\n"
-
+            << "  Hotii apar intr-o singura banda si avanseaza spre tine.\n"
+            << "  Impusca-i inainte sa ajunga la tine!\n\n"
             << "  TASTE DE TRAGERE:\n"
             << "    A  sau  <-  =  Banda STANGA\n"
             << "    S  sau  sageata-sus    =  Banda MIJLOC\n"
@@ -370,7 +371,12 @@ void Game::playLevel(){
    SetConsoleCursorInfo(hOut, &cursorInfo);
    clearScreen();
 
-   if(quit || !player.isAlive() || isFailed()) {
+   if(quit) {
+      gameStarted = false;
+      currentLevelIdx = 0;
+      return;
+   }
+   if(!player.isAlive() || isFailed()) {
       showGameOver(false);
       return;
    }

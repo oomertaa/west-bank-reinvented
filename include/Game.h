@@ -1,9 +1,19 @@
 #pragma once
 #include "Player.h"
-#include "Level.h"
 #include "Shop.h"
 #include <vector>
 #include <string>
+
+struct LevelConfig {
+   int levelNumber = 1;
+   int maxThieves = 5;
+   int moveIntervalMs = 1500;
+   int spawnIntervalMs = 3500;
+   int maxEscaped = 3;
+   int thiefBaseHp = 5;
+   int thiefReward = 50;
+   int maxPosition = 8;
+};
 
 class Game{
    private:
