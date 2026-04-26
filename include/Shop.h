@@ -22,6 +22,7 @@ public:
    void addWeapon(Weapon* weapon);
    void loadFromFile(const std::string& filename);
    bool purchase(int idx, Player& player);
+   void open(Player& player);
    int getCatalogSize() const;
    std::string getName() const;
 

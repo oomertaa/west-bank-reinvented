@@ -1,12 +1,14 @@
 #pragma once
 #include "Player.h"
 #include "Level.h"
+#include "Shop.h"
 #include <vector>
 #include <string>
 
 class Game{
    private:
       Player player;
+      Shop shop;
       std::vector<LevelConfig> levelConfigs;
       int currentLevelIdx;
       bool running;
@@ -18,6 +20,7 @@ class Game{
       void showInstructions() const;
       void showStats() const;
       void showGameOver(bool won);
+      void showInventory();
       void playLevel();
       void demonstratePolymorphism();
 

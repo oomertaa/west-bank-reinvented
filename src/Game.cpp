@@ -39,7 +39,9 @@ void Game::printBanner() {
    std::cout << "\n";
 }
 
-Game::Game() : player("Sheriff", 100, 500), currentLevelIdx(0), running(false), gameStarted(false) {}
+Game::Game() : player("Sheriff", 100, 500), currentLevelIdx(0), running(false), gameStarted(false) {
+   shop.addWeapon(new Pistol("Pistol Îmbunătățit", 20, 15, 200, 1.5));
+}
 
 Game::Game(const std::string& configFile, const std::string& levelsFile)
    : player("Sheriff", 100, 500), currentLevelIdx(0), running(false), gameStarted(false){
@@ -413,14 +415,60 @@ void Game::demonstratePolymorphism() {
 }
 
 
+void Game::showInventory() {
+   while (true) {
+      clearScreen();
+      for (int i = 0; i < 20; i++) std::cout << "=";
+      std::cout << " Inventar\n";
+      for (int i = 0; i < 20; i++) std::cout << "=";
+      std::cout << "\n";
+
+      const auto& inv = player.getInventory();
+      if (inv.empty()) {
+         std::cout << "  Nu ai nicio arma!\n";
+      } else {
+         for (int i = 0; i < static_cast<int>(inv.size()); ++i) {
+            std::string prefix = (i == player.getCurrentWeaponIdx()) ? " > " : "   ";
+            std::cout << prefix << "[" << (i + 1) << "] " << inv[i]->getName()
+                      << " | DMG: " << inv[i]->getDamage()
+                      << " | Munitie: " << inv[i]->getAmmo() << "/" << inv[i]->getMaxAmmo()
+                      << " | Tip: " << inv[i]->getType() << "\n";
+         }
+      }
+
+      for (int i = 0; i < 20; i++) std::cout << "=";
+      std::cout << "\n  Introdu numarul armei pentru a o echipa, sau 0 pentru a iesi: ";
+
+      int choice = -1;
+      std::cin >> choice;
+      if (std::cin.fail()) {
+         std::cin.clear();
+         std::cin.ignore(1000, '\n');
+         continue;
+      }
+      if (choice == 0) break;
+      int idx = choice - 1;
+      if (idx < 0 || idx >= static_cast<int>(inv.size())) {
+         std::cout << "  Index invalid! Apasa Enter...\n";
+         std::cin.ignore(); std::cin.get();
+         continue;
+      }
+      player.switchWeapon(idx);
+      std::cout << "  Echipat: " << inv[idx]->getName() << "! Apasa Enter...\n";
+      std::cin.ignore(); std::cin.get();
+   }
+}
+
 void Game::showMainMenu() {
     while (running) {
         printBanner();
         std::cout << "\n"
                   << "  [1] " << (gameStarted ? "Continua" : "Joc Nou") << "\n"
                   << "  [2] Statistici\n"
-                  << "  [3] Instructiuni\n"
-                  << "  [4] Demo Polimorfism\n"
+                  << "  [3] Shop\n"
+                  << "  [4] Inventar\n"
+                  << "  [5] Instructiuni\n"
+                  << "  [6] Demo Polimorfism\n"
                   << "  [0] Iesire\n\n";
         for (int i = 0; i < 20; i++){
             std::cout << "=";
@@ -449,9 +497,15 @@ void Game::showMainMenu() {
                 showStats();
                 break;
             case 3:
-                showInstructions();
+                shop.open(player);
                 break;
             case 4:
+                showInventory();
+                break;
+            case 5:
+                showInstructions();
+                break;
+            case 6:
                 demonstratePolymorphism();
                 break;
             case 0:
