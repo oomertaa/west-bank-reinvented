@@ -1,6 +1,8 @@
 #include "Game.h"
 #include "Thief.h"
 #include "Pistol.h"
+#include "Shotgun.h"
+#include "Rifle.h"
 #include <iostream>
 #include <iomanip>
 #include <conio.h>
@@ -91,12 +93,9 @@ void Game::loadLevels(const std::string& levelsFile) {
          f.ignore(1000, '\n');
          continue;
       }
-      LevelConfig cfg;
-      cfg.levelNumber = std::stoi(token);
-      f >> cfg.maxThieves >> cfg.moveIntervalMs >> cfg.spawnIntervalMs
-        >> cfg.maxEscaped >> cfg.thiefBaseHp >> cfg.thiefReward
-        >> cfg.maxPosition;
-      levelConfigs.push_back(cfg);
+      int ln = std::stoi(token), mt, mi, si, me, thp, tr, mp;
+      f >> mt >> mi >> si >> me >> thp >> tr >> mp;
+      levelConfigs.push_back(LevelConfig(ln, mt, mi, si, me, thp, tr, mp));
    }
 }
 
@@ -194,10 +193,10 @@ void Game::playLevel(){
    };
 
    auto spawnNext = [&]() {
-      if(thievesSpawned >= cfg.maxThieves) return;
+      if(thievesSpawned >= cfg.getMaxThieves()) return;
       int lane = randomLane();
       ++thievesSpawned;
-      currentThief = std::make_unique<Thief>("Thief", cfg.thiefBaseHp, lane, cfg.maxPosition, cfg.thiefReward, 15, "Pistol");
+      currentThief = std::make_unique<Thief>("Thief", cfg.getThiefBaseHp(), lane, cfg.getMaxPosition(), cfg.getThiefReward(), 15, "Pistol");
       const char* laneNames[] = {"STANGA", "MIJLOC", "DREAPTA"};
       lastMessage = "A aparut un hot in banda " + std::string(laneNames[lane]) + "!";
    };
@@ -262,7 +261,7 @@ void Game::playLevel(){
          }
       }
 
-      if (row == cfg.maxPosition) {
+      if (row == cfg.getMaxPosition()) {
          for (int i = 0; i < 3; i++) {
             std::string p = "   [J]    ";
             int pad = (W - (int)p.size()) / 2;
@@ -285,7 +284,7 @@ void Game::playLevel(){
         std::cout << "|" << center("STANGA") << "|" << center("MIJLOC") << "|" << center("DREAPTA") << "|\n";
         std::cout << sep << "\n";
 
-        for (int row = 0; row <= cfg.maxPosition; ++row)
+        for (int row = 0; row <= cfg.getMaxPosition(); ++row)
             std::cout << buildLaneRow(row) << "\n";
 
         std::cout << sep << "\n";
@@ -299,20 +298,20 @@ void Game::playLevel(){
 
         std::cout << "  [A/Stg] Stanga  [S/Sus] Mijloc  [D/Dr] Dreapta  [R] Reincarc  [Q] Iesi\n";
         std::cout << hdr << "\n";
-        std::cout << "  Nivel: " << cfg.levelNumber
-                  << " | Hoti: " << thievesSpawned << "/" << cfg.maxThieves
+        std::cout << "  Nivel: " << cfg.getLevelNumber()
+                  << " | Hoti: " << thievesSpawned << "/" << cfg.getMaxThieves()
                   << " | Eliminati: " << thievesDefeated
-                  << " | Scapati: " << thievesEscaped << "/" << cfg.maxEscaped
+                  << " | Scapati: " << thievesEscaped << "/" << cfg.getMaxEscaped()
                   << "                    \n";
         std::cout << "  " << std::left << std::setw(56) << lastMessage << "\n";
         std::cout << hdr << "\n";
     };
 
     auto isComplete = [&]() {
-        return thievesDefeated + thievesEscaped >= cfg.maxThieves;
+        return thievesDefeated + thievesEscaped >= cfg.getMaxThieves();
     };
     auto isFailed = [&]() {
-        return thievesEscaped >= cfg.maxEscaped;
+        return thievesEscaped >= cfg.getMaxEscaped();
     };
 
     // joc
@@ -351,13 +350,13 @@ void Game::playLevel(){
 
       auto now = std::chrono::steady_clock::now();
 
-      if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastMoveTime).count() >= cfg.moveIntervalMs) {
+      if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastMoveTime).count() >= cfg.getMoveIntervalMs()) {
          updateThief();
          lastMoveTime = now;
       }
 
-      if(!currentThief && thievesSpawned < cfg.maxThieves) {
-         if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSpawnTime).count() >= cfg.spawnIntervalMs) {
+      if(!currentThief && thievesSpawned < cfg.getMaxThieves()) {
+         if (std::chrono::duration_cast<std::chrono::milliseconds>(now - lastSpawnTime).count() >= cfg.getSpawnIntervalMs()) {
             spawnNext();
             lastSpawnTime = now;
          }
@@ -395,8 +394,10 @@ void Game::playLevel(){
       gameStarted = false;
       currentLevelIdx = 0;
    } else {
-      std::cout << "Nivel " << cfg.levelNumber << " completat! Ai eliminat " << thievesDefeated << " hoti.\n"
+      saveProgress("data/save.txt");
+      std::cout << "Nivel " << cfg.getLevelNumber() << " completat! Ai eliminat " << thievesDefeated << " hoti.\n"
                 << "Scor: " << player.getScore() << "\n"
+                << "Progres salvat automat.\n"
                 << "Apasa Enter pentru a merge la magazin sau continua...\n";
       std::cin.ignore();
       std::cin.get();
@@ -479,6 +480,65 @@ void Game::showInventory() {
    }
 }
 
+void Game::saveProgress(const std::string& filename) {
+   std::ofstream f(filename);
+   if (!f.is_open())
+      throw std::runtime_error("Nu pot salva in: " + filename);
+   f << "level " << currentLevelIdx << "\n";
+   f << "weaponidx " << player.getCurrentWeaponIdx() << "\n";
+   f << "name " << player.getName() << "\n";
+   f << "hp " << player.getHp() << "\n";
+   f << "maxhp " << player.getMaxHp() << "\n";
+   f << "money " << player.getMoney() << "\n";
+   f << "score " << player.getScore() << "\n";
+   const auto& inv = player.getInventory();
+   f << "weapons " << inv.size() << "\n";
+   for (const Weapon* w : inv)
+      f << w->getType() << " " << w->getDamage() << " " << w->getMaxAmmo() << " "
+        << w->getPrice() << " " << w->getFireRate() << " " << w->getName() << "\n";
+}
+
+void Game::loadProgress(const std::string& filename) {
+   std::ifstream f(filename);
+   if (!f.is_open())
+      throw std::runtime_error("Nu exista un fisier de salvare.");
+   std::string key, pName = "Sheriff";
+   int pHp = 100, pMaxHp = 100, pMoney = 500, pScore = 0, pWeaponIdx = 0, savedLevel = 0;
+   while (f >> key) {
+      if      (key == "level")     f >> savedLevel;
+      else if (key == "weaponidx") f >> pWeaponIdx;
+      else if (key == "name")      f >> pName;
+      else if (key == "hp")        f >> pHp;
+      else if (key == "maxhp")     f >> pMaxHp;
+      else if (key == "money")     f >> pMoney;
+      else if (key == "score")     f >> pScore;
+      else if (key == "weapons") {
+         int count; f >> count;
+         player = Player(pName, pMaxHp, pMoney);
+         player.setHp(pHp);
+         player.setScore(pScore);
+         player.clearInventory();
+         for (int i = 0; i < count; i++) {
+            std::string type, name;
+            int damage, maxAmmo, price;
+            double fireRate;
+            f >> type >> damage >> maxAmmo >> price >> fireRate;
+            std::getline(f, name);
+            if (!name.empty() && name[0] == ' ') name = name.substr(1);
+            Weapon* w = nullptr;
+            if      (type == "Pistol")  w = new Pistol(name, damage, maxAmmo, price, fireRate);
+            else if (type == "SHOTGUN") w = new Shotgun(name, damage, maxAmmo, price, fireRate);
+            else if (type == "RIFLE")   w = new Rifle(name, damage, maxAmmo, price, fireRate);
+            if (w) player.addWeapon(w);
+         }
+         if (pWeaponIdx < static_cast<int>(player.getInventory().size()))
+            player.switchWeapon(pWeaponIdx);
+      }
+   }
+   currentLevelIdx = savedLevel;
+   gameStarted = (savedLevel > 0);
+}
+
 void Game::showMainMenu() {
     while (running) {
         printBanner();
@@ -489,6 +549,8 @@ void Game::showMainMenu() {
                   << "  [4] Inventar\n"
                   << "  [5] Instructiuni\n"
                   << "  [6] Demo Polimorfism\n"
+                  << "  [7] Salveaza progres\n"
+                  << "  [8] Incarca progres\n"
                   << "  [0] Iesire\n\n";
         for (int i = 0; i < 20; i++){
             std::cout << "=";
@@ -524,6 +586,16 @@ void Game::showMainMenu() {
                 break;
             case 6:
                 demonstratePolymorphism();
+                break;
+            case 7:
+                saveProgress("data/save.txt");
+                std::cout << "  Progres salvat! Apasa Enter...\n";
+                std::cin.ignore(); std::cin.get();
+                break;
+            case 8:
+                loadProgress("data/save.txt");
+                std::cout << "  Progres incarcat! Apasa Enter...\n";
+                std::cin.ignore(); std::cin.get();
                 break;
             case 0:
                 running = false;

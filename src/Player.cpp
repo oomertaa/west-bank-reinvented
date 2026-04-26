@@ -81,6 +81,12 @@ void Player::addWeapon(Weapon* weapon) {
       inventory.push_back(weapon);
 }
 
+void Player::clearInventory() {
+   for (Weapon* w : inventory) delete w;
+   inventory.clear();
+   currentWeaponIdx = 0;
+}
+
 void Player::switchWeapon(int idx) {
    if (idx < 0 || idx >= static_cast<int>(inventory.size()))
       throw std::out_of_range("Index invalid pentru schimbarea armei");

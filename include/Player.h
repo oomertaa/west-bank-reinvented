@@ -28,6 +28,7 @@ public:
    void addMoney(int amount);
    void addScore(int amount);
    void addWeapon(Weapon* weapon);
+   void clearInventory();
    void switchWeapon(int idx);
    int shoot();
    void reload();

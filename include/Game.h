@@ -1,19 +1,9 @@
 #pragma once
 #include "Player.h"
 #include "Shop.h"
+#include "LevelConfig.h"
 #include <vector>
 #include <string>
-
-struct LevelConfig {
-   int levelNumber = 1;
-   int maxThieves = 5;
-   int moveIntervalMs = 1500;
-   int spawnIntervalMs = 3500;
-   int maxEscaped = 3;
-   int thiefBaseHp = 5;
-   int thiefReward = 50;
-   int maxPosition = 8;
-};
 
 class Game{
    private:
@@ -26,6 +16,8 @@ class Game{
 
       void loadConfig(const std::string& configFile);
       void loadLevels(const std::string& levelsFile);
+      void saveProgress(const std::string& filename);
+      void loadProgress(const std::string& filename);
       void showMainMenu();
       void showInstructions() const;
       void showStats() const;
